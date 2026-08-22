@@ -105,6 +105,9 @@ Built as a solution for **Smart India Hackathon (SIH)**, ARTHA combines OCR, AI-
 * **Neon PostgreSQL**
 * **Argon2**
 * **Tesseract OCR**
+* **Open-CV**
+* **Numpy**
+
 
 ### AI
 
@@ -183,7 +186,19 @@ Security is an important part of ARTHA's architecture.
 ### 1. Download Using Pip
 
 ```bash
-pip install artha
+git clone https://github.com/PranaySehgal/ARTHA.git
+cd ARTHA
+
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# Linux/macOS
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+pip install -e .
 ```
 
 
