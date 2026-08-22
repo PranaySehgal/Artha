@@ -13,6 +13,7 @@ from sqlalchemy import create_engine, text
 from dotenv import get_key
 from verifyCred import verifyCred
 from pathlib import Path
+from info import information
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -56,11 +57,20 @@ def create_Account(user_name: str, password: str):
     if not response:
         return {"Response": "Error!"}
     else:
-        return {"Response": response}
+        return {"Response": str(response)}
+
+
+@app.post("/info")
+async def info(user_id: str):
+    response = information(user_id)
+    if not response:
+        return {"Response": "Error!"}
+    else:
+        return str(response)
 
 
 @app.post("/signInAccount")
-def signIn(user_id: str, password: str):
+async def signIn(user_id: str, password: str):
     conn = create_engine(get_key(f"{BASE_DIR}/.env", "DATABASE")).connect()
     query = text('SELECT * FROM "USERS" WHERE user_id=:username')
     res = conn.execute(query, {"username": user_id}).fetchall()

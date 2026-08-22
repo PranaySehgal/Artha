@@ -7,7 +7,6 @@ console = Console()
 
 
 def printData(expenses):
-
     table = Table(
         title="[bold cyan]ARTHA Expense History[/bold cyan]",
         title_style="bold cyan",
