@@ -72,7 +72,7 @@ function parseTransactions(text) {
     const rows = [];
 
     const regex =
-        /\('([^']*)',\s*'([^']*)',\s*'([^']*)',\s*(None|'[^']*'),\s*(None|'[^']*')\)/g;
+        /\('([^']*)',\s*'([^']*)',\s*'([^']*)',\s*(None|'[^']*'),\s*'([\s\S]*)'\)/g;
 
     let match;
 
