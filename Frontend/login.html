@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log in — Arth</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <script>
+      if (sessionStorage.getItem("user_id")) {
+        window.location.href = "dashboard.html";
+      }
+    </script>
+  </head>
+  <body>
+    <div class="auth-shell">
+      <div class="auth-side">
+        <div class="auth-ambient"></div>
+        <div class="auth-side-top">
+          <a href="index.html" class="nav-logo"
+            ><span class="dot"></span>Arth</a
+          >
+        </div>
+        <div class="auth-quote">
+          <div class="q-mark">"</div>
+          <p>
+            I finally know where my mess fund actually goes. Splitting the
+            electricity bill with three roommates used to be a whole ordeal.
+          </p>
+          <div class="q-attr">— A ARTH USER, THIRD-YEAR ENGINEERING</div>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="auth-main">
+        <div class="auth-form-wrap">
+          <div class="form-eyebrow">Welcome back</div>
+          <h1>Log in</h1>
+          <p class="form-sub">Pick up right where your Arth left off.</p>
+          <div class="form-alert" id="login-alert"></div>
+
+          <form id="login-form" novalidate>
+            <div class="field" id="field-email">
+              <label for="email">User Id</label>
+              <input type="text" id="email" placeholder="5886235261" />
+              <div class="field-error"></div>
+            </div>
+            <div class="field" id="field-password">
+              <label for="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+              />
+              <div class="field-error"></div>
+            </div>
+            <button
+              type="submit"
+              class="btn btn-primary btn-block"
+              id="login-submit"
+            >
+              Log in
+            </button>
+          </form>
+
+          <p class="form-footnote">
+            New to Arth? <a href="signup.html">Create an account</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+  </body>
+</html>
