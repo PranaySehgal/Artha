@@ -85,28 +85,43 @@ async function loadTransactions() {
 ========================= */
 
 function parseTransactions(data) {
+
     const response = data?.Response;
 
-    // No transactions / backend error response
     if (
         !response ||
         response === "Error!" ||
-        typeof response !== "object"
+        typeof response !== "object" ||
+        Array.isArray(response)
     ) {
         return [];
     }
 
     return Object.values(response)
-        .filter(t => t && typeof t === "object")
+        .filter(t => {
+            if (!t || typeof t !== "object")
+                return false;
+
+            // Reject empty / invalid transaction objects
+            const amount = t["Amount"];
+
+            return (
+                amount !== null &&
+                amount !== undefined &&
+                amount !== "" &&
+                !isNaN(Number(amount))
+            );
+        })
         .map(t => {
+
             const first = t["Date"];
             const second = t["Category"];
 
             const firstIsDate =
-                /^\d{4}-\d{2}-\d{2}$/.test(first);
+                /^\d{4}-\d{2}-\d{2}$/.test(String(first || ""));
 
             const secondIsDate =
-                /^\d{4}-\d{2}-\d{2}$/.test(second);
+                /^\d{4}-\d{2}-\d{2}$/.test(String(second || ""));
 
             let date;
             let category;
@@ -114,10 +129,12 @@ function parseTransactions(data) {
             if (firstIsDate) {
                 date = first;
                 category = second;
-            } else if (secondIsDate) {
+            }
+            else if (secondIsDate) {
                 date = second;
                 category = first;
-            } else {
+            }
+            else {
                 date = first;
                 category = second;
             }
@@ -129,15 +146,8 @@ function parseTransactions(data) {
                 date: date,
                 merchant: t["Merchant"]
             };
-        })
-        .filter(t =>
-            t.merchant ||
-            t.category ||
-            t.date ||
-            Number.isFinite(t.amount)
-        );
+        });
 }
-
 /* =========================
    STATS
 ========================= */
