@@ -143,7 +143,7 @@ POST   /createAccount
 POST   /signInAccount
 POST   /receipts/createEntry
 
-GET    /receipts/info
+POST    /info
 ```
 
 The API is designed so that the frontend can communicate with the backend independently of the underlying implementation.
