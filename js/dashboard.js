@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setupModal();
 
     const name = sessionStorage.getItem("name");
+
     if (name) {
         document.getElementById("dash-user-name").textContent =
             name.split(" ")[0];
@@ -31,26 +32,42 @@ document.addEventListener("DOMContentLoaded", () => {
 ========================= */
 
 async function loadTransactions() {
+
     try {
+
         const response = await fetch(
             `${BASE_URL}/info?user_id=${USER_ID}`,
-            { method: "POST" }
+            {
+                method: "POST"
+            }
         );
 
         if (!response.ok)
             throw new Error("Could not load transactions.");
 
-        const text = await response.text();
+        /*
+           /info now returns proper JSON:
 
-        console.log("INFO RESPONSE:", text);
+           {
+               "Response": {
+                   "0": {...},
+                   "1": {...}
+               }
+           }
+        */
 
-        transactions = parseTransactions(text);
+        const data = await response.json();
+
+        console.log("INFO RESPONSE:", data);
+
+        transactions = parseTransactions(data);
 
         renderStats();
         renderChart();
         renderTable();
 
     } catch (error) {
+
         console.error(error);
 
         document.getElementById("tx-list").innerHTML = `
@@ -67,42 +84,69 @@ async function loadTransactions() {
    PARSE BACKEND RESPONSE
 ========================= */
 
-function parseTransactions(text) {
+function parseTransactions(data) {
 
-    const rows = [];
+    const response = data?.Response;
 
-    // Find every tuple returned by the backend.
-    const tupleRegex = /\(([^()]*)\)/g;
+    if (!response)
+        return [];
 
-    let tupleMatch;
+    /*
+       Response is an object whose keys are:
+       "0", "1", "2", ...
 
-    while ((tupleMatch = tupleRegex.exec(text)) !== null) {
+       Object.values() converts it into a normal array.
+    */
 
-        const tuple = tupleMatch[1];
+    return Object.values(response).map(t => {
 
-        // First four fields are safe to split using the "', '" pattern.
-        const parts = tuple.match(
-            /^'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*(None|'[^']*'),\s*'(.*)'$/
-        );
+        /*
+           Backend currently sends:
 
-        if (!parts)
-            continue;
+           Date:     "Food"
+           Category: "2026-03-18"
 
-        rows.push({
-            user_id: parts[1],
-            amount: Number(parts[2]),
-            category: parts[3],
+           So detect which value is actually the date.
+        */
 
-            date: parts[4] === "None"
-                ? null
-                : parts[4].slice(1, -1),
+        const first = t["Date"];
+        const second = t["Category"];
 
-            merchant: parts[5]
-        });
-    }
+        const firstIsDate =
+            /^\d{4}-\d{2}-\d{2}$/.test(first);
 
-    return rows;
+        const secondIsDate =
+            /^\d{4}-\d{2}-\d{2}$/.test(second);
+
+        let date;
+        let category;
+
+        if (firstIsDate) {
+            date = first;
+            category = second;
+        }
+        else if (secondIsDate) {
+            date = second;
+            category = first;
+        }
+        else {
+            /*
+               Fallback in case backend fixes the labels later.
+            */
+            date = first;
+            category = second;
+        }
+
+        return {
+            user_id: t["User ID"],
+            amount: Number(t["Amount"]),
+            category: category,
+            date: date,
+            merchant: t["Merchant"]
+        };
+    });
 }
+
 
 /* =========================
    STATS
@@ -173,7 +217,7 @@ function renderChart() {
 
     /*
        Generate a different color for every category.
-       HSL lets us spread colors evenly around the color wheel.
+       HSL spreads colors around the color wheel.
     */
 
     const colors = entries.map((_, index) => {
@@ -183,7 +227,6 @@ function renderChart() {
 
         return `hsl(${hue}, 65%, 55%)`;
     });
-
 
     let current = 0;
 
@@ -203,10 +246,8 @@ function renderChart() {
         }
     ).join(", ");
 
-
     const chartWrap =
         document.getElementById("chart-wrap");
-
 
     chartWrap.innerHTML = `
 
@@ -236,7 +277,6 @@ function renderChart() {
 
         </div>
     `;
-
 
     /*
        Legend
@@ -291,15 +331,16 @@ function renderTable() {
         document.getElementById("tx-list");
 
     if (!transactions.length) {
+
         container.innerHTML = `
             <div class="tx-empty">
                 <div class="e-icon">🧾</div>
                 <p>No transactions yet.</p>
             </div>
         `;
+
         return;
     }
-
 
     transactions.sort((a, b) => {
 
@@ -308,7 +349,6 @@ function renderTable() {
 
         return new Date(b.date) - new Date(a.date);
     });
-
 
     container.innerHTML = `
         <div style="overflow-x:auto">
@@ -348,21 +388,23 @@ function renderTable() {
                         <tr>
 
                             <td style="padding:12px">
-                                ${t.date
-            ? formatDate(t.date)
-            : "—"}
+                                ${
+                                    t.date
+                                        ? formatDate(t.date)
+                                        : "—"
+                                }
                             </td>
 
                             <td style="padding:12px">
                                 ${escapeHtml(
-                t.merchant || "Unknown"
-            )}
+                                    t.merchant || "Unknown"
+                                )}
                             </td>
 
                             <td style="padding:12px">
                                 ${escapeHtml(
-                t.category || "Other"
-            )}
+                                    t.category || "Other"
+                                )}
                             </td>
 
                             <td
@@ -398,19 +440,17 @@ function setupUpload() {
     const input =
         document.getElementById("receipt-input");
 
-
     zone.onclick = () => input.click();
 
-
     zone.ondragover = e => {
+
         e.preventDefault();
+
         zone.classList.add("drag");
     };
 
-
     zone.ondragleave = () =>
         zone.classList.remove("drag");
-
 
     zone.ondrop = e => {
 
@@ -424,7 +464,6 @@ function setupUpload() {
         if (file)
             uploadReceipt(file);
     };
-
 
     input.onchange = () => {
 
@@ -441,10 +480,12 @@ function setupUpload() {
 async function uploadReceipt(file) {
 
     if (!file.type.startsWith("image/")) {
+
         showToast(
             "Please upload a receipt image.",
             true
         );
+
         return;
     }
 
@@ -467,11 +508,9 @@ async function uploadReceipt(file) {
         </div>
     `;
 
-
     const formData = new FormData();
 
     formData.append("file", file);
-
 
     try {
 
@@ -483,12 +522,10 @@ async function uploadReceipt(file) {
             }
         );
 
-
         if (!response.ok)
             throw new Error(
                 "Could not process receipt."
             );
-
 
         const data =
             await response.json();
@@ -529,7 +566,6 @@ function showEditForm(data) {
 
         </div>
 
-
         <div class="verify-row-2">
 
             <div class="verify-field">
@@ -543,7 +579,6 @@ function showEditForm(data) {
                 >
 
             </div>
-
 
             <div class="verify-field">
 
@@ -560,47 +595,49 @@ function showEditForm(data) {
 
         </div>
 
+        <div class="verify-field">
 
-<div class="verify-field">
-    <label>Category</label>
+            <label>Category</label>
 
-    <input
-        type="text"
-        id="v-category"
-        list="category-options"
-        value="${escapeAttr(data.category || "")}"
-        placeholder="e.g. Food, Travel, Shopping"
-    >
+            <input
+                type="text"
+                id="v-category"
+                list="category-options"
+                value="${escapeAttr(data.category || "")}"
+                placeholder="e.g. Food, Travel, Shopping"
+            >
 
-    <datalist id="category-options">
-        <option value="Food">
-        <option value="Travel">
-        <option value="Shopping">
-        <option value="Utility">
-        <option value="Entertainment">
-        <option value="Healthcare">
-        <option value="Education">
-        <option value="Other">
-    </datalist>
-</div>
-    <div class="verify-field">
-    <label>Number of people</label>
+            <datalist id="category-options">
+                <option value="Food">
+                <option value="Travel">
+                <option value="Shopping">
+                <option value="Utility">
+                <option value="Entertainment">
+                <option value="Healthcare">
+                <option value="Education">
+                <option value="Other">
+            </datalist>
 
-    <input
-        type="number"
-        id="v-people"
-        min="1"
-        step="1"
-        value="1"
-        placeholder="1"
-    >
-
-    <small>
-        Enter the number of people sharing this expense.
-    </small>
-</div>
         </div>
 
+        <div class="verify-field">
+
+            <label>Number of people</label>
+
+            <input
+                type="number"
+                id="v-people"
+                min="1"
+                step="1"
+                value="1"
+                placeholder="1"
+            >
+
+            <small>
+                Enter the number of people sharing this expense.
+            </small>
+
+        </div>
 
         <div class="modal-actions">
 
@@ -621,11 +658,9 @@ function showEditForm(data) {
         </div>
     `;
 
-
     document.getElementById(
         "verify-cancel"
     ).onclick = closeModal;
-
 
     document.getElementById(
         "verify-submit"
@@ -643,7 +678,9 @@ async function submitReceipt() {
         document.getElementById("v-merchant").value.trim();
 
     let amount =
-        Number(document.getElementById("v-amount").value);
+        Number(
+            document.getElementById("v-amount").value
+        );
 
     const category =
         document.getElementById("v-category").value.trim();
@@ -652,22 +689,31 @@ async function submitReceipt() {
         document.getElementById("v-date").value;
 
     const people =
-        Number(document.getElementById("v-people").value);
-
+        Number(
+            document.getElementById("v-people").value
+        );
 
     if (!merchant || !amount || !category || !date) {
-        showToast("Please fill all fields.", true);
+
+        showToast(
+            "Please fill all fields.",
+            true
+        );
+
         return;
     }
 
     if (!people || people < 1) {
-        showToast("Number of people must be at least 1.", true);
+
+        showToast(
+            "Number of people must be at least 1.",
+            true
+        );
+
         return;
     }
 
-
     amount = amount / people;
-
 
     const data = {
         merchant: merchant,
@@ -675,7 +721,6 @@ async function submitReceipt() {
         category: category,
         date: date
     };
-
 
     try {
 
@@ -692,9 +737,14 @@ async function submitReceipt() {
             }
         );
 
-        let res = await response.json()
-        console.log()
-        if (!response || !response.ok || res.Response == "Error!") throw new Error("Could not save receipt.");
+        const res = await response.json();
+
+        console.log(res);
+
+        if (!response.ok || res.Response == "Error!")
+            throw new Error(
+                "Could not save receipt."
+            );
 
         document.getElementById("modal-body").innerHTML = `
             <div class="scan-state">
@@ -713,16 +763,19 @@ async function submitReceipt() {
             </div>
         `;
 
-
         setTimeout(() => {
+
             closeModal();
             loadTransactions();
-        }, 1000);
 
+        }, 1000);
 
     } catch (error) {
 
-        showToast(error.message, true);
+        showToast(
+            error.message,
+            true
+        );
     }
 }
 
@@ -736,7 +789,6 @@ function setupModal() {
     document.getElementById(
         "modal-close"
     ).onclick = closeModal;
-
 
     document.getElementById(
         "modal-overlay"
