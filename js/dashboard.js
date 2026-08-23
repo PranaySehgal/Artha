@@ -85,68 +85,58 @@ async function loadTransactions() {
 ========================= */
 
 function parseTransactions(data) {
-
     const response = data?.Response;
 
-    if (!response)
+    // No transactions / backend error response
+    if (
+        !response ||
+        response === "Error!" ||
+        typeof response !== "object"
+    ) {
         return [];
+    }
 
-    /*
-       Response is an object whose keys are:
-       "0", "1", "2", ...
+    return Object.values(response)
+        .filter(t => t && typeof t === "object")
+        .map(t => {
+            const first = t["Date"];
+            const second = t["Category"];
 
-       Object.values() converts it into a normal array.
-    */
+            const firstIsDate =
+                /^\d{4}-\d{2}-\d{2}$/.test(first);
 
-    return Object.values(response).map(t => {
+            const secondIsDate =
+                /^\d{4}-\d{2}-\d{2}$/.test(second);
 
-        /*
-           Backend currently sends:
+            let date;
+            let category;
 
-           Date:     "Food"
-           Category: "2026-03-18"
+            if (firstIsDate) {
+                date = first;
+                category = second;
+            } else if (secondIsDate) {
+                date = second;
+                category = first;
+            } else {
+                date = first;
+                category = second;
+            }
 
-           So detect which value is actually the date.
-        */
-
-        const first = t["Date"];
-        const second = t["Category"];
-
-        const firstIsDate =
-            /^\d{4}-\d{2}-\d{2}$/.test(first);
-
-        const secondIsDate =
-            /^\d{4}-\d{2}-\d{2}$/.test(second);
-
-        let date;
-        let category;
-
-        if (firstIsDate) {
-            date = first;
-            category = second;
-        }
-        else if (secondIsDate) {
-            date = second;
-            category = first;
-        }
-        else {
-            /*
-               Fallback in case backend fixes the labels later.
-            */
-            date = first;
-            category = second;
-        }
-
-        return {
-            user_id: t["User ID"],
-            amount: Number(t["Amount"]),
-            category: category,
-            date: date,
-            merchant: t["Merchant"]
-        };
-    });
+            return {
+                user_id: t["User ID"],
+                amount: Number(t["Amount"]),
+                category: category,
+                date: date,
+                merchant: t["Merchant"]
+            };
+        })
+        .filter(t =>
+            t.merchant ||
+            t.category ||
+            t.date ||
+            Number.isFinite(t.amount)
+        );
 }
-
 
 /* =========================
    STATS
@@ -207,8 +197,11 @@ function renderChart() {
 
     const entries = Object.entries(categories);
 
-    if (!entries.length)
-        return;
+if (!entries.length) {
+    document.getElementById("chart-wrap").innerHTML = "";
+    document.getElementById("chart-legend").innerHTML = "";
+    return;
+}
 
     const total = entries.reduce(
         (sum, [, amount]) => sum + amount,
