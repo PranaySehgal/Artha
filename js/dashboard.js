@@ -71,29 +71,38 @@ function parseTransactions(text) {
 
     const rows = [];
 
-    const regex =
-        /\('([^']*)',\s*'([^']*)',\s*'([^']*)',\s*(None|'[^']*'),\s*'([\s\S]*)'\)/g;
+    // Find every tuple returned by the backend.
+    const tupleRegex = /\(([^()]*)\)/g;
 
-    let match;
+    let tupleMatch;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((tupleMatch = tupleRegex.exec(text)) !== null) {
+
+        const tuple = tupleMatch[1];
+
+        // First four fields are safe to split using the "', '" pattern.
+        const parts = tuple.match(
+            /^'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*(None|'[^']*'),\s*'(.*)'$/
+        );
+
+        if (!parts)
+            continue;
 
         rows.push({
-            user_id: match[1],
-            amount: Number(match[2]),
-            category: match[3],
-            date: match[4] === "None"
+            user_id: parts[1],
+            amount: Number(parts[2]),
+            category: parts[3],
+
+            date: parts[4] === "None"
                 ? null
-                : match[4].slice(1, -1),
-            merchant: match[5] === "None"
-                ? null
-                : match[5].slice(1, -1)
+                : parts[4].slice(1, -1),
+
+            merchant: parts[5]
         });
     }
 
     return rows;
 }
-
 
 /* =========================
    STATS
