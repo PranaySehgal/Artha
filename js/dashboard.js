@@ -544,7 +544,7 @@ function showEditForm(data) {
                     type="number"
                     step="0.01"
                     id="v-amount"
-                    value="${data.amount ?? ""}"
+                    value="${data.total ""}"
                 >
 
             </div>
