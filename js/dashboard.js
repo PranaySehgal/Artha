@@ -744,11 +744,19 @@ async function submitReceipt() {
 
         console.log(res);
 
-        if (!response.ok || res.Response == "Error!")
-            throw new Error(
-                "Could not save receipt."
-            );
+if (res.Response === "Duplicate Entry") {
+    showToast(
+        "This receipt has already been added.",
+        true
+    );
+    return;
+}
 
+if (!response.ok || res.Response === "Error!") {
+    throw new Error(
+        "Could not save receipt."
+    );
+}
         document.getElementById("modal-body").innerHTML = `
             <div class="scan-state">
 
